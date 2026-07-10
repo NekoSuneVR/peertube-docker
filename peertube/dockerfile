@@ -20,17 +20,23 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-RUN git init . \
+# Clone exact PeerTube tag
+RUN git init \
     && git remote add origin https://github.com/Chocobozzz/PeerTube.git \
     && git fetch --depth 1 origin refs/tags/${PEERTUBE_VERSION}:refs/tags/${PEERTUBE_VERSION} \
-    && git checkout tags/${PEERTUBE_VERSION}
+    && git checkout ${PEERTUBE_VERSION}
 
-RUN corepack enable
+# Enable Yarn classic (PeerTube uses Yarn)
+RUN corepack enable \
+    && corepack prepare yarn@1.22.22 --activate
 
-RUN yarn install --production=false
+# Install dependencies
+RUN yarn install --production=false --frozen-lockfile
 
+# Build PeerTube
 RUN yarn build
 
+# Create storage folders
 RUN mkdir -p \
     /data \
     /config \
@@ -38,10 +44,6 @@ RUN mkdir -p \
 
 EXPOSE 9000
 
-VOLUME [
-    "/data",
-    "/config",
-    "/storage"
-]
+VOLUME ["/data","/config","/storage"]
 
 CMD ["node","dist/server"]
