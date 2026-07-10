@@ -6,7 +6,8 @@ LABEL org.opencontainers.image.description="PeerTube v6.3.3 built from Git tag"
 LABEL org.opencontainers.image.version="6.3.3"
 
 ENV NODE_ENV=production
-ENV PEERTUBE_VERSION=v6.3.3
+ARG PEERTUBE_VERSION=v6.3.3
+ENV PEERTUBE_VERSION=${PEERTUBE_VERSION}
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
