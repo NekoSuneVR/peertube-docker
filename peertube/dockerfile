@@ -5,7 +5,8 @@ LABEL org.opencontainers.image.version="6.3.3"
 
 ARG PEERTUBE_VERSION=v6.3.3
 
-ENV NODE_ENV=production
+# Build needs dev dependencies
+ENV NODE_ENV=development
 ENV PEERTUBE_VERSION=${PEERTUBE_VERSION}
 
 RUN apt-get update && apt-get install -y \
@@ -26,22 +27,27 @@ RUN git init \
     && git fetch --depth 1 origin refs/tags/${PEERTUBE_VERSION}:refs/tags/${PEERTUBE_VERSION} \
     && git checkout ${PEERTUBE_VERSION}
 
-# Yarn 1 required by PeerTube 6.3.3
+# Install Yarn 1.x
 RUN corepack enable \
     && corepack prepare yarn@1.22.22 --activate
 
-# Install root dependencies
+# Install ALL dependencies (including TypeScript)
 RUN yarn install --frozen-lockfile
 
 # Install client dependencies
 WORKDIR /app/client
 RUN yarn install --frozen-lockfile
 
-# Return root
 WORKDIR /app
 
-# Build PeerTube
+# Build
 RUN yarn build
+
+# Remove development dependencies after build
+RUN yarn install --production --ignore-scripts --prefer-offline
+
+# Runtime environment
+ENV NODE_ENV=production
 
 RUN mkdir -p \
     /data \
