@@ -26,17 +26,23 @@ RUN git init \
     && git fetch --depth 1 origin refs/tags/${PEERTUBE_VERSION}:refs/tags/${PEERTUBE_VERSION} \
     && git checkout ${PEERTUBE_VERSION}
 
-# Enable Yarn classic (PeerTube uses Yarn)
+# Yarn 1 required by PeerTube 6.3.3
 RUN corepack enable \
     && corepack prepare yarn@1.22.22 --activate
 
-# Install dependencies
-RUN yarn install --production=false --frozen-lockfile
+# Install root dependencies
+RUN yarn install --frozen-lockfile
+
+# Install client dependencies
+WORKDIR /app/client
+RUN yarn install --frozen-lockfile
+
+# Return root
+WORKDIR /app
 
 # Build PeerTube
 RUN yarn build
 
-# Create storage folders
 RUN mkdir -p \
     /data \
     /config \
