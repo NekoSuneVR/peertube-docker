@@ -1,0 +1,56 @@
+name: Build PeerTube Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "PeerTube Git tag"
+        required: true
+        default: "v6.3.3"
+      push:
+        description: "Push image to GitHub Container Registry"
+        required: true
+        type: boolean
+        default: false
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/peertube
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: ${{ inputs.push }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ inputs.push }}
+          build-args: |
+            PEERTUBE_VERSION=${{ inputs.version }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ inputs.version }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
